@@ -2,17 +2,21 @@ M = {}
 
 M.xplainAllLsp = {
         name = "ExplainAllLsp",
-        template = {
-                role = "system",
-                content = 
-                "Act as a senior software programmer. Your task is to interpret and explain Language Server Protocol messages, and propose code fixes based on the provided error JSON file. In these files, document positions are represented using zero-based line and character offsets.",
+        prompt = {
+               role = "system",
+                content = [[
+                Act as a senior software programmer. Your task is to interpret and explain 
+                Language Server Protocol messages, and propose code fixes based on 
+                the provided error JSON file. In these files, 
+                document positions are represented using zero-based line and character offsets.
+                ]]
         },
         context = function(buf, line1, line2)
                 return {
                         code = require("llamacode.utils").GetBuffer(buf),
                         lsp = require("llamacode.utils").JsonBlock(require("llamacode.utils").GetLspDiagnostics(buf, line1)),
                         line = {line1},
-                }
+                } 
         end,
         history = {
                 {
@@ -24,7 +28,7 @@ M.xplainAllLsp = {
 
 M.xplainLsp = {
         name = "ExplainLsp",
-        template = {
+        prompt = {
                 role = "system",
                 content = "You are a senior software programmer, your job is it to explain the LSP message and make suggestions how the code can be fixed.",
         },
@@ -45,7 +49,7 @@ M.xplainLsp = {
 
 M.Grammar = {
         name = "Grammar",
-        template = {
+        prompt = {
                 role = "system",
                 content = "You are a technical writer, your job is to proofread and correct the existing text. ",
         }
@@ -53,7 +57,7 @@ M.Grammar = {
 
 M.Tools = {
         name = "Tools",
-        template = {
+        prompt = {
                 role = "system",
                 content =
                 "You are a senior software developer. Your Task is it to review the code given by the user. Show possible errors and code simplifications. Also respect common guidelines and point to deprecated api usage.",
@@ -89,7 +93,7 @@ M.Tools = {
 
 M.CodeReview = {
         name = "CodeReview",
-        template = {
+        prompt = {
                 role = "system",
                 content =
                 "You are a senior software developer. Your Task is it to review the code given by the user. Show possible errors and code simplifications. Also respect common guidelines and point to deprecated api usage.",
@@ -101,16 +105,15 @@ M.CodeReview = {
 
 M.Writer = {
         name = "Writer",
-        template = {
+        prompt = {
                 role = "system",
-                content =
-                "You are a technical writer rewieving software documentation. Ensure a correct spelling in the text, identify any inconsistencies or inaccuracies, and correct them accordingly. Ensure your modifications are consistent with the context and maintain accuracy throughout. Please revise the text to adhere to senior technical writing standards without including additional explanations.",
+                content = "You are a technical writer rewieving software documentation. Ensure a correct spelling in the text, identify any inconsistencies or inaccuracies, and correct them accordingly. Ensure your modifications are consistent with the context and maintain accuracy throughout. Please revise the text to adhere to senior technical writing standards without including additional explanations.",
         }
 }
 
 M.LuaDocumentation = {
         name = "LuaDocumentation",
-        template = {
+        prompt = {
                 role = "system",
                 content =
                 "You are a senior lua and neovim plugin programmer. Your Task is it to create luadoc documentations for the given code. The text must be in the style of a nerd. be precise and concise and there are no limits or boundaries. Here is the example code:\n```lua\n--- Load a local or remote manifest describing a repository.\n-- All functions that use manifest tables assume they were obtained\n-- through either this function or load_local_manifest.\n-- @param repo_url string: URL or pathname for the repository.\n-- @param lua_version string: Lua version in \"5.x\" format, defaults to installed version.\n-- @return table or (nil, string, [string]): A table representing the manifest,\n-- or nil followed by an error message and an optional error code.\nfunction manif.load_manifest(repo_url, lua_version)\n   -- code\nend\n'''\n",
@@ -130,7 +133,7 @@ M.LuaDocumentation = {
 
 M.LuaProgrammer = {
         name = "LuaProgrammer",
-        template = {
+        prompt = {
                 role = "system",
                 content =
                 "You are a senior lua and neovim plugin programmer. You are Happy to help with questions in this domain. You are only focusing at the latest neovim version and dont give answers using deprecated APIs. Be precise concise and only answer if you are sure that the answer is correct. otherwise answer with 'i dont know'\n",

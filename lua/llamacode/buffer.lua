@@ -1,84 +1,11 @@
 M = {}
 
 local utils = require("llamacode.utils")
+local fm = require("llamacode.frontmatter")
 
 local start_win = 0;
 local win = 0;
 local buf = 0;
-
--- Helper function to trim whitespaces
-local function trim(str)
-    return str:match("^%s*(.-)%s*$")
-end
-
-local function is_number(str)
-    if str == nil then return false end
-    local pattern = "^[-+]?([0-9]*%.?[0-9]+)$"
-    return string.match(str, pattern) ~= nil
-end
-
-local function is_indent(indent, string)
-        for i=1, indent do
-                if string:sub(i, i) ~= ' ' then
-                        return false;
-                end
-        end
-        return true;
-end
-
-local function decode_text(lines, index, indent)
-        local map = {}
-
-        while index <= #lines do
-                local line = lines[index];
-                if is_indent(indent, line) then
-                        table.insert(map, trim(line));
-                else
-                        break;
-                end
-                index = index + 1;
-        end
-        return index - 1, map;
-end
-
-local function decode_map(lines, index, indent)
-        local map = {}
-        while index <= #lines do
-                local line = lines[index];
-                if not is_indent(indent, line) then
-                        return index - 1, map;
-                elseif line:match("^(.-):%s*$") then
-                        local key = line:match("^(.-):%s*$")
-                        local submap = {};
-                        index, submap = decode_map(lines, index + 1, indent + 1);
-                        map[trim(key)] = submap;
-                elseif line:match("^(.-): |%s*$") then
-                        local key = line:match("^(.-): |$")
-                        local text = {};
-                        index, text = decode_text(lines, index + 1, indent + 1);
-                        map[trim(key)] = text;
-                elseif line:match("^(.-):(.-)$") then
-                        local key, value = line:match("^(.-):(.-)$")
-                        if is_number(trim(value)) then
-                                map[trim(key)] = tonumber(trim(value));
-                        else
-                                map[trim(key)] = trim(value);
-                        end
-                else
-                        print("no match: " .. line)
-                end
-                index = index + 1;
-        end
-        return index - 1, map;
-end
-
-
--- Decodes YAML-like data from the buffer lines into a Lua table.
-local function decode_frontmatter(fm)
-        local _, map = decode_map(fm, 1, 0);
-        return map;
-end
-
 
 local get_win_opts = function ()
 
@@ -190,47 +117,24 @@ end
 
 M.set_content = function(opts, document)
 
-        local all_lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-        local last_row = #all_lines
-
-        if last_row > 1 then
-                vim.notify("Warning: Buffer " .. buf .. " is not empty.", vim.log.levels.WARN);
-        end
-
-        local prompt_lines = vim.split(document.Prompt.template.content, '\n');
-        for i, line in ipairs(prompt_lines) do
-                prompt_lines[i] = "    " .. line
-        end
-
-        local options = {};
-        if document.Prompt.options then
-                for k, v in pairs(document.Prompt.options) do
-                        table.insert(options, "  " .. k .. ": " .. v);
-                end
-        end
-
-        local context = {};
-        if document.Prompt.context then
-                context =  document.Prompt.context(opts.source_buf, opts.line1, opts.line2);
-        end
-
+        local last_row = 1;
         local content =
             vim.iter({ "---",
-                    "model: " .. document.Model,
-                    "prompt:",
-                    "  name: " .. document.Prompt.name,
-                    "  content: |", prompt_lines,
-                    "options: ",
-                    options,
-                    "---", ""
+                        fm.encode_frontmatter(document),
+                    "---", "",
             }):flatten():totable();
 
         vim.api.nvim_buf_set_lines(buf, last_row - 1, -1, false, content);
         last_row = last_row + #content;
 
+        local context = {};
+        if document.context then
+                context = document.context(opts.source_buf, opts.line1, opts.line2);
+        end
+
         -- add the history, when there is some
-        if document.Prompt.history then
-                for _, v in pairs(document.Prompt.history) do
+        if document.history then
+                for _, v in pairs(document.history) do
                         local prompt = { "## Role: " .. v.role}
                         local messages = vim.split(utils.TemplateVars(context, v.content), '\n')
                         vim.api.nvim_buf_set_lines(buf, last_row - 1, -1, false, prompt);
@@ -250,7 +154,7 @@ M.get_content = function(_)
         for i, value in ipairs(all_lines) do
                 if value:match("^---$") then
                         if context == "front_matter" then
-                                document = vim.tbl_deep_extend('force', document, decode_frontmatter(values));
+                                document = vim.tbl_deep_extend('force', document, fm.decode_frontmatter(values));
                                 context = "none";
                                 values = {};
                         elseif i == 1 then
@@ -282,4 +186,4 @@ M.jump_last = function()
   end
 end
 
-return M;
+return M

@@ -48,7 +48,7 @@ end
 M.GetBuffer = function(buf)
         local current_lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
         local message = vim.iter({
-                "```" .. vim.bo.filetype, current_lines, "```\n"
+                "```" .. vim.api.nvim_buf_get_option(buf, 'filetype'), current_lines, "```\n"
         }):flatten():totable();
         return message
 end
@@ -92,7 +92,7 @@ M.GetBlock = function(buf_nr, start, last)
                 false);
 
         local message = vim.iter({
-                "```" .. vim.bo.filetype, current_lines, "```\n"
+                "```" .. vim.api.nvim_buf_get_option(buf_nr, 'filetype'), current_lines, "```\n"
         }):flatten():totable();
         return message
 end
@@ -107,12 +107,12 @@ M.JsonBlock = function(text)
         return message
 end
 
---- replace template vvariables
---- this method takes a string for a template.
---- all the {VAR} will be replaced with the values from the dict.
+---This method takes a string as a template.
+--All placeholders `{VAR}` will be replaced with 
+--the corresponding values from the dictionary. 
 M.TemplateVars = function(dict, text)
         -- Use a pattern to find all occurrences of {VAR} in the text
-        local res = (text:gsub('{(%w+)}', function(var)
+        local res = (string.gsub(text, '{(%w+)}', function(var)
                 -- Replace each occurrence with the corresponding value from the dictionary
                 return table.concat(dict[var] or var, "\n")
         end))

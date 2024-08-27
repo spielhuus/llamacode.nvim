@@ -12,10 +12,19 @@ local log = require("llamacode.logging");
 -- @return table: A table representing the formatted prompt, suitable for sending to the Ollama API.
 local parse_prompt = function(_, content)
         local messages = {};
+
+        print("Prompt type: " .. type(content.prompt.content))
+        local system_prompt = '';
+        if type(content.prompt.content)~='string' then
+                system_prompt = table.concat(content.prompt.content, "\n")
+        else
+                system_prompt = content.prompt.content
+        end
         table.insert(messages, {
                 role = "system",
-                content = table.concat(content.prompt.content or {}, "\n")
+                content = system_prompt,
         });
+
         for _, v in pairs(content.chat) do
                 table.insert(messages, {
                         role = v.role,
@@ -23,20 +32,20 @@ local parse_prompt = function(_, content)
                 });
         end
 
-         if type(next(content.options)) == "nil" then
-                return {
-                        model = content.model,
-                        messages = messages,
-                        stream = true,
-                }
-        else
-                return {
-                        model = content.model,
-                        options = content.options,
-                        messages = messages,
-                        stream = true,
-                }
+        local result = {
+                model = content.model,
+                messages = messages,
+                stream = content.stream,
+        }
+
+        if content.options then
+                result.options = content.options;
         end
+
+        if content.tools then
+                result.tools = content.tools;
+        end
+        return result;
 end
 
 local M = {}
@@ -47,7 +56,7 @@ M.models = function(opts)
 
         --- Execute cURL command in a new job.
         local cmd = "curl --silent --no-buffer --fail-with-body http://" ..
-        opts.host .. ":" .. tostring(opts.port) .. "/api/tags"
+            opts.host .. ":" .. tostring(opts.port) .. "/api/tags"
         Job_id = vim.fn.jobstart(cmd, {
                 -- Callback function to execute with stdout data.
                 on_stdout = function(_, data, _)
@@ -126,15 +135,15 @@ M.chat = function(opts, content)
         -- local message = "";
 
         local cmd = "curl --silent --no-buffer -X POST http://" ..
-                opts.host ..
-                ":" ..
-                opts.port ..
-                "/api/chat -d " ..
-                vim.fn.shellescape(
-                        vim.json.encode(parse_prompt(opts, content))
-                )
+            opts.host ..
+            ":" ..
+            opts.port ..
+            "/api/chat -d " ..
+            vim.fn.shellescape(
+                    vim.json.encode(parse_prompt(opts, content))
+            )
 
-        -- log.write("CURL", cmd);
+        log.write("CURL", cmd);
 
         -- message = '';
         Job_id = vim.fn.jobstart(cmd, {
@@ -142,7 +151,9 @@ M.chat = function(opts, content)
                         local clean_data = trim_table(data);
                         if #clean_data > 0 then
                                 local enc_line = vim.json.decode(clean_data[1]);
-                                if enc_line['done'] == false then
+                                log.write("<<< ", vim.inspect(enc_line));
+
+                                -- if enc_line['done'] == false then
                                         local token_role = enc_line["message"]["role"];
                                         if token_role ~= role then
                                                 buffer.append_lines({ "\n", "### Role: " .. token_role .. "\n" });
@@ -150,11 +161,12 @@ M.chat = function(opts, content)
                                         end
                                         local token = enc_line["message"]["content"];
                                         buffer.append_lines({ token });
-                                end
+                                -- end
                         end
                 end,
                 on_stderr = function(_, data, _)
                         local clean_data = trim_table(data);
+                        log.write("<<< ", vim.inspect(clean_data));
                         if #clean_data > 0 then
                                 buffer.append_lines({ "Err: " .. data });
                         end

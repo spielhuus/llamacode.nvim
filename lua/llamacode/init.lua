@@ -6,27 +6,43 @@ local utils = require('llamacode.utils')
 local selected_model = nil;
 local selected_prompt = nil;
 
-local create_document = function()
-        if selected_model then
-                M.document.Model = selected_model;
-        else
-                M.document.Model = "tinyllama";
-        end
+local create_document = function(opts)
+
+        local prompt = {};
         if selected_prompt then
-                M.document.Prompt = selected_prompt;
+                prompt = selected_prompt;
+        elseif opts.default_prompt then
+                prompt = M.opts.prompts[opts.default_prompt];
         else
-                M.document.Prompt = {
-                        name = "Default",
-                        template = {
-                                role = "system",
-                                content = "You are a helpful assistant. You answer precise and concise.",
-                        },
-                        options = {
-                                temperature = 0.9,
-                        },
-                }
+                prompt = M.opts.prompts["default"];
         end
-        return M.document;
+
+        if selected_model then 
+                prompt.model = selected_model;
+        end
+        -- TODO get selected model
+        return prompt;
+
+--         if selected_model then
+--                 M.document.Model = selected_model;
+--         else
+--                 M.document.Model = "tinyllama";
+--         end
+--         if selected_prompt then
+--                 M.document.Prompt = selected_prompt;
+--         else
+--                 M.document.Prompt = {
+--                         name = "Default",
+--                         template = {
+--                                 role = "system",
+--                                 content = "You are a helpful assistant. You answer precise and concise.",
+--                         },
+--                         options = {
+--                                 temperature = 0.9,
+--                         },
+--                 }
+--         end
+--         return M.document;
 end
 
 --- Loads prompts from a Lua file into the provided options table.
@@ -121,7 +137,6 @@ vim.api.nvim_create_user_command("Llama", function(arg)
         end
         arg.source_buf = vim.fn.winbufnr(0);
         if arg.args == "Prompt" then
-                print(vim.inspect(arg))
                 M.prompts(M.opts, function(item)
                         selected_prompt = M.opts.prompts[item.value];
                         M.new(vim.tbl_deep_extend('force', M.opts, arg));
