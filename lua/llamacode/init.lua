@@ -6,8 +6,11 @@ local utils = require('llamacode.utils')
 local selected_model = nil;
 local selected_prompt = nil;
 
+--- Create a document based on user options.
+-- This function creates a document using the specified prompt or the default one.
+-- @param opts table: Optional parameters for creating the document.
+-- @return table: A table representing the created document.
 local create_document = function(opts)
-
         local prompt = {};
         if selected_prompt then
                 prompt = selected_prompt;
@@ -17,32 +20,11 @@ local create_document = function(opts)
                 prompt = M.opts.prompts["default"];
         end
 
-        if selected_model then 
+        if selected_model then
                 prompt.model = selected_model;
         end
         -- TODO get selected model
         return prompt;
-
---         if selected_model then
---                 M.document.Model = selected_model;
---         else
---                 M.document.Model = "tinyllama";
---         end
---         if selected_prompt then
---                 M.document.Prompt = selected_prompt;
---         else
---                 M.document.Prompt = {
---                         name = "Default",
---                         template = {
---                                 role = "system",
---                                 content = "You are a helpful assistant. You answer precise and concise.",
---                         },
---                         options = {
---                                 temperature = 0.9,
---                         },
---                 }
---         end
---         return M.document;
 end
 
 --- Loads prompts from a Lua file into the provided options table.
@@ -69,6 +51,14 @@ M.opts = {
         prompts = {}
 }
 
+--- Set up LlamaCode with custom options.
+-- This function initializes LlamaCode by setting configuration
+-- options and loading prompts from both the user's configuration
+-- directory and project-specific directories.
+-- @param opts table: A table containing the configuration options
+--                    to be set for LlamaCode. Supported options include
+--                    'default_prompts', which, when true, loads default
+--                    prompts from a built-in module.
 M.setup = function(opts)
         for k, v in pairs(opts) do M.opts[k] = v end
         if M.opts.default_prompts then
