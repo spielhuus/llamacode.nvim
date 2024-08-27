@@ -13,7 +13,6 @@ local log = require("llamacode.logging");
 local parse_prompt = function(_, content)
         local messages = {};
 
-        print("Prompt type: " .. type(content.prompt.content))
         local system_prompt = '';
         if type(content.prompt.content)~='string' then
                 system_prompt = table.concat(content.prompt.content, "\n")
